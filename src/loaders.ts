@@ -1,4 +1,4 @@
-import {Source, Loader} from '@graphql-toolkit/common';
+import {Source, Loader} from '@graphql-tools/utils';
 import {
   UnnormalizedTypeDefPointer,
   LoadTypedefsOptions,
@@ -9,8 +9,8 @@ import {
   loadTypedefsSync,
   loadSchema,
   loadSchemaSync,
-} from '@graphql-toolkit/core';
-import {mergeTypeDefs} from '@graphql-toolkit/schema-merging';
+} from '@graphql-tools/load';
+import {mergeTypeDefs} from '@graphql-tools/merge';
 import {GraphQLSchema, DocumentNode, buildASTSchema, print} from 'graphql';
 import {MiddlewareFn, useMiddleware} from './helpers/utils';
 

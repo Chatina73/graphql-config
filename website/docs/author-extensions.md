@@ -122,7 +122,7 @@ The [GraphQL Toolkit](https://github.com/ardatan/graphql-toolkit) library has [a
 For simplicity, we're going to use only [the one](https://github.com/ardatan/graphql-toolkit/tree/master/packages/loaders/code-file) responsible for extracting GraphQL SDL from code files.
 
 ```typescript
-import {CodeFileLoader} from '@graphql-toolkit/code-file-loader';
+import {CodeFileLoader} from '@graphql-tools/code-file-loader';
 
 const InspectorExtension: GraphQLExtensionDeclaration = (api) => {
   // Lets schema
