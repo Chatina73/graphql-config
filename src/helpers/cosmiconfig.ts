@@ -1,12 +1,6 @@
-import {
-  cosmiconfig,
-  cosmiconfigSync,
-  Loader,
-  defaultLoaders,
-} from 'cosmiconfig';
-import loadTs from '@endemolshinegroup/cosmiconfig-typescript-loader';
-import {loadToml} from 'cosmiconfig-toml-loader';
-import {env} from 'string-env-interpolation';
+import { cosmiconfig, cosmiconfigSync, Loader, defaultLoaders } from 'cosmiconfig';
+import { env } from 'string-env-interpolation';
+import { createJiti } from 'jiti';
 
 export interface ConfigSearchResult {
   config: any;
@@ -19,69 +13,80 @@ const legacySearchPlaces = [
   '.graphqlconfig.json',
   '.graphqlconfig.yaml',
   '.graphqlconfig.yml',
-];
+] as const;
 
-export function isLegacyConfig(filepath: string): boolean {
-  filepath = filepath.toLowerCase();
-
-  return legacySearchPlaces.some((name) => filepath.endsWith(name));
+export function isLegacyConfig(filePath: string): boolean {
+  filePath = filePath.toLowerCase();
+  return legacySearchPlaces.some((name) => filePath.endsWith(name));
 }
 
 function transformContent(content: string): string {
   return env(content);
 }
 
-const createCustomLoader = (loader: Loader): Loader => {
-  return (filepath, content) => {
-    return loader(filepath, transformContent(content));
-  };
-};
+function createCustomLoader(loader: Loader): Loader {
+  return (filePath, content) => loader(filePath, transformContent(content));
+}
 
-export function createCosmiConfig(
-  moduleName: string,
-  {
-    legacy,
-  }: {
-    legacy: boolean;
-  },
-) {
-  const options = prepareCosmiconfig(moduleName, {
-    legacy,
-  });
-
+export function createCosmiConfig(moduleName: string, legacy: boolean) {
+  const options = prepareCosmiconfig(moduleName, legacy, 'async');
   return cosmiconfig(moduleName, options);
 }
 
-export function createCosmiConfigSync(
-  moduleName: string,
-  {legacy}: {legacy: boolean},
-) {
-  const options = prepareCosmiconfig(moduleName, {
-    legacy,
-  });
-
+export function createCosmiConfigSync(moduleName: string, legacy: boolean) {
+  const options = prepareCosmiconfig(moduleName, legacy, 'sync');
   return cosmiconfigSync(moduleName, options);
 }
 
-function prepareCosmiconfig(moduleName: string, {legacy}: {legacy: boolean}) {
-  const loadYaml = createCustomLoader(defaultLoaders['.yaml']);
-  const loadTomlCustom = createCustomLoader(loadToml);
-  const loadJson = createCustomLoader(defaultLoaders['.json']);
+const loadTypeScript: Loader = (filepath) => {
+  const jiti = createJiti(__filename, { interopDefault: true });
+  return jiti.import(filepath);
+};
 
+const loadTypeScriptSync: Loader = (filepath) => {
+  const jiti = createJiti(__filename, { interopDefault: true });
+  return jiti(filepath);
+};
+
+const loadToml: Loader = (...args) => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { loadToml } = require('cosmiconfig-toml-loader');
+  return createCustomLoader(loadToml)(...args);
+};
+
+const loadYaml = createCustomLoader(defaultLoaders['.yaml']);
+
+function prepareCosmiconfig(
+  moduleName: string,
+  legacy: boolean,
+  mode: 'sync' | 'async',
+): {
+  searchPlaces: string[];
+  loaders: Record<string, Loader>;
+} {
   const searchPlaces = [
-    `#.config.ts`,
-    `#.config.js`,
+    '#.config.ts',
+    '#.config.cts',
+    '#.config.mts',
+    '#.config.js',
+    '#.config.cjs',
+    '#.config.mjs',
     '#.config.json',
     '#.config.yaml',
     '#.config.yml',
     '#.config.toml',
     '.#rc',
     '.#rc.ts',
+    '.#rc.cts',
+    '.#rc.mts',
     '.#rc.js',
+    '.#rc.cjs',
+    '.#rc.mjs',
     '.#rc.json',
     '.#rc.yml',
     '.#rc.yaml',
     '.#rc.toml',
+    'package.json',
   ];
 
   if (legacy) {
@@ -93,12 +98,15 @@ function prepareCosmiconfig(moduleName: string, {legacy}: {legacy: boolean}) {
   return {
     searchPlaces: searchPlaces.map((place) => place.replace('#', moduleName)),
     loaders: {
-      '.ts': loadTs,
-      '.js': defaultLoaders['.js'],
-      '.json': loadJson,
+      '.ts': mode === 'async' ? loadTypeScript : loadTypeScriptSync,
+      '.cts': mode === 'async' ? loadTypeScript : loadTypeScriptSync,
+      '.mts': mode === 'async' ? loadTypeScript : loadTypeScriptSync,
+      '.js': mode === 'async' ? loadTypeScript : loadTypeScriptSync,
+      '.mjs': mode === 'async' ? loadTypeScript : loadTypeScriptSync,
+      '.json': defaultLoaders['.json'],
       '.yaml': loadYaml,
       '.yml': loadYaml,
-      '.toml': loadTomlCustom,
+      '.toml': loadToml,
       noExt: loadYaml,
     },
   };

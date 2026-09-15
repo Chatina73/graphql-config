@@ -1,0 +1,6 @@
+dist/
+out/
+.next/
+.husky/_/
+.bob/
+pnpm-lock.yaml

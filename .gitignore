@@ -3,9 +3,12 @@
 node_modules/
 coverage/
 dist/
-public/
-*.map
 out.txt
-.now
-yarn.lock
 package-lock.json
+.next/
+*.log
+.bob
+
+website/public/_redirects
+website/public/sitemap.xml
+website/out/
